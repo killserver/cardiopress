@@ -162,6 +162,7 @@ class CardinalUpdater {
 	}
 
 	public function plugin_add($result, $action, $args) {
+		$this->get_repository_all();
 		if(isset($args->browse) && $args->browse=="featured" && isset($result->plugins)) {
 			foreach($this->responserAll as $v) {
 				array_unshift($result->plugins, $v);
