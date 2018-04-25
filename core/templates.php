@@ -32,7 +32,34 @@ class templates {
 	}
 
 	private static function menu($arr) {
-		$arr = array('menu' => $arr[1], 'container_class' => $arr[3], 'menu_class' => $arr[3], 'echo' => false);
+		$params = array();
+		if(isset($arr[3]) && strpos($arr[3], ";")!==false) {
+			$r = explode(";", $arr[3]);
+			for($i=0;$i<sizeof($r);$i++) {
+				$exp = explode("=-=", $r[$i]);
+				if(isset($exp[1])) {
+					$params[$exp[0]] = $exp[1];
+				} else {
+					$params[] = $exp[0];
+				}
+			}
+		} else if(isset($arr[3])) {
+			$params['class'] = $arr[3];
+		} else {
+			$params['class'] = "";
+		}
+		$walker = false;
+		if(isset($params['walker'])) {
+			$fn = $params['walker'];
+			$walker = new $fn($params['class'], true);
+			unset($params['walker']);
+		}
+		if($walker===false) {
+			$default = array('menu' => $arr[1], 'menu_class' => $params['class'], 'echo' => false);
+		} else {
+			$default = array('menu' => $arr[1], 'menu_class' => $params['class'], 'echo' => false, "walker" => $walker);
+		}
+		$arr = array_merge($default, $params);
 		return wp_nav_menu($arr);
 	}
 
@@ -61,15 +88,27 @@ class templates {
 		for($i=0;$i<sizeof($keys);$i++) {
 			$tmp = $tpl;
 			foreach($data[$keys[$i]] as $k => $v) {
-				$tmp = str_replace('{'.$nameData.'.$id}', $start, $tmp);
-				$tmp = str_replace('{$id}', $start, $tmp);
-				$tmp = str_replace("{".$nameData.".".$k."}", $v, $tmp);
-				$tmp = str_replace("{".$k."}", $v, $tmp);
+				$tmp = self::replaceForeach($k, $v, $tmp, $start, $nameData);
 			}
+			$tmp = preg_replace_callback('#\[foreachif (.*?)\]([\s\S]*?)\[/foreachif \\1\]#i', ("templates::is"), $tmp);
 			$ret .= $tmp;
 			$start += $step;
 		}
 		return $ret;
+	}
+
+	private static function replaceForeach($k, $v, $tmp, $start, $nameData) {
+		if(is_array($v) || is_object($v)) {
+			foreach($v as $k => $v) {
+				$tmp = self::replaceForeach($k, $v, $tmp, $nameData.".".$k);
+			}
+		} else {
+			$tmp = str_replace('{'.$nameData.'.$id}', $start, $tmp);
+			$tmp = str_replace('{$id}', $start, $tmp);
+			$tmp = str_replace("{".$nameData.".".$k."}", $v, $tmp);
+			$tmp = str_replace("{".$k."}", $v, $tmp);
+		}
+		return $tmp;
 	}
 
 	public static function assign_var($name, $val, $block = "", $id = "") {
@@ -77,10 +116,12 @@ class templates {
 	}
 
 	public static function assign_vars($arr, $name = "", $id = "") {
+		$gen = false;
 		if($name!=="" && $id==="") {
-			$id = uniqid();
+			$id = wp_generate_uuid4().microtime(true);
+			$gen = true;
 		}
-		if($name!=="" && (is_array($arr) || is_object($arr))) {
+		if($id!=="" && (is_array($arr) || is_object($arr))) {
 			if(!isset(self::$blocks[$name])) {
 				self::$blocks[$name] = array();
 			}
@@ -88,10 +129,22 @@ class templates {
 				self::$blocks[$name][$id] = array();
 			}
 			foreach($arr as $k => $v) {
+				if(empty($v)) {
+					$v = "";
+					self::$blocks[$name][$id]["IS_".$k] = "false";
+				} else {
+					self::$blocks[$name][$id]["IS_".$k] = "true";
+				}
 				self::$blocks[$name][$id][$k] = $v;
 			}
 		} else if(is_array($arr) || is_object($arr)) {
 			foreach($arr as $k => $v) {
+				if(empty($v)) {
+					$v = "";
+					self::$blocks["IS_".$k] = "false";
+				} else {
+					self::$blocks["IS_".$k] = "true";
+				}
 				self::$blocks[$k] = $v;
 			}
 		}
@@ -136,6 +189,189 @@ class templates {
 		}
 	}
 
+	final private static function is($array, $elseif=false) {
+		$else=false;
+		$good = true;
+		$ret = (isset($array[3]) ? (!$elseif ? $array[3] : false) : "");
+		if(isset($array[1]) && strpos($array[1], "||") !== false) {
+			$data = explode("||", $array[1]);
+			$array[1] = $data[0];
+			$else = self::is(array($array, $data[1], $array[2], $ret), true);
+		}
+		if(isset($array[1]) && strpos($array[1], "&&") !== false) {
+			$data = explode("&&", $array[1]);
+			$array[1] = $data[0];
+			$good = self::is(array($array, $data[1], $array[2], $ret), true);
+		}
+		if(!$elseif) {
+			$data = $array[2];
+		} else {
+			$data = true;
+		}
+		$e = array();
+		if(strpos($array[1], "!ajax") !== false) {
+			$type = "not_ajax";
+		} elseif(strpos($array[1], "ajax") !== false) {
+			$type = "ajax";
+		} elseif(strpos($array[1], "<>") !== false) {
+			$type = "not";
+			$e = explode("<>", $array[1]);
+		} elseif(strpos($array[1], ">=") !== false) {
+			$type = "biga";
+			$e = explode(">=", $array[1]);
+		} elseif(strpos($array[1], "<=") !== false) {
+			$type = "smalla";
+			$e = explode("<=", $array[1]);
+		} elseif(strpos($array[1], "<") !== false) {
+			$type = "small";
+			$e = explode("<", $array[1]);
+		} elseif(strpos($array[1], ">") !== false) {
+			$type = "big";
+			$e = explode(">", $array[1]);
+		} elseif(strpos($array[1], "!=") !== false) {
+			$type = "not";
+			$e = explode("!=", $array[1]);
+		} elseif(strpos($array[1], "=") !== false) {
+			$type = "yes";
+			$t = str_replace("==", "=", $array[1]);
+			$e = explode("=", $t);
+		}
+		if(!isset($type)) return false;
+		if($type == "UL") {
+			$e = str_replace("\"", "", $e);
+			if(($e=="true" || $else) && $good) {
+				unset($e);
+				unset($type);
+				return $data;
+			} else {
+				unset($e);
+				unset($type);
+				return $ret;
+			}
+		} elseif($type == "nce") {
+			$e = str_replace("\"", "", $e);
+			if((!class_exists($e) || $else) && $good) {
+				unset($e);
+				unset($type);
+				return $data;
+			} else {
+				unset($e);
+				unset($type);
+				return $ret;
+			}
+		} elseif($type == "ce") {
+			$e = str_replace("\"", "", $e);
+			if((class_exists($e) || $else) && $good) {
+				unset($e);
+				unset($type);
+				return $data;
+			} else {
+				unset($e);
+				unset($type);
+				return $ret;
+			}
+		} elseif($type == "not") {
+			$t = str_replace("\"", "", $e[1]);
+			if(($e[0] != $e[1] || $e[0] != $t || $else) && $good) {
+				unset($e);
+				unset($type);
+				return $data;
+			} else {
+				unset($e);
+				unset($type);
+				return $ret;
+			}
+		} elseif($type == "smalla") {
+			if(($e[0] <= $e[1] || $else) && $good) {
+				unset($e);
+				unset($type);
+				return $data;
+			} else {
+				unset($e);
+				unset($type);
+				return $ret;
+			}
+		} elseif($type == "biga") {
+			if(($e[0] >= $e[1] || $else) && $good) {
+				unset($e);
+				unset($type);
+				return $data;
+			} else {
+				unset($e);
+				unset($type);
+				return $ret;
+			}
+		} elseif($type == "small") {
+			if(($e[0] < $e[1] || $else) && $good) {
+				unset($e);
+				unset($type);
+				return $data;
+			} else {
+				unset($e);
+				unset($type);
+				return $ret;
+			}
+		} elseif($type == "big") {
+			if(($e[0] > $e[1] || $else) && $good) {
+				unset($e);
+				unset($type);
+				return $data;
+			} else {
+				unset($e);
+				unset($type);
+				return $ret;
+			}
+		} elseif($type == "yes") {
+			$t = str_replace("\"", "", $e[1]);
+			if(($e[0] == $e[1] || $e[0] == $t || $else) && $good) {
+				unset($e);
+				unset($type);
+				return $data;
+			} else {
+				unset($e);
+				unset($type);
+				return $ret;
+			}
+		} elseif($type == "empty") {
+			$e = str_replace("\"", "", $e);
+			if((empty($e) || $else) && $good) {
+				unset($e);
+				unset($type);
+				return $data;
+			} else {
+				unset($e);
+				unset($type);
+				return $ret;
+			}
+		} elseif($type == "not_empty") {
+			$e = str_replace("\"", "", $e);
+			if((!empty($e) || isset(self::$blocks[$e]) || $else) && $good) {
+				unset($e);
+				unset($type);
+				return $data;
+			} else {
+				unset($e);
+				unset($type);
+				return $ret;
+			}
+		} elseif($type == "ajax") {
+			if(getenv('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest' && !isset($_GET['jajax'])) {
+				unset($type);
+				return $data;
+			} else {
+				return "";
+			}
+		} elseif($type == "not_ajax") {
+			if(getenv('HTTP_X_REQUESTED_WITH') != 'XMLHttpRequest') {
+				unset($type);
+				return $data;
+			} else {
+				return "";
+			}
+		}
+		return "";
+	}
+
 	private static function compile($tpl) {
 		$tpl = preg_replace_callback("#\{C_(.+?)\}#i", "self::config", $tpl);
 		$tpl = preg_replace_callback("#\[FIELD=\[(.+?)\]\[(.+?)\]\](.+?)\[/FIELD\]#is", "self::fields", $tpl);
@@ -151,9 +387,22 @@ class templates {
 		$tpl = preg_replace_callback("#\{include (.+?)=[\"'](.+?)[\"']\}#i", "self::includer", $tpl);
 		$tpl = preg_replace_callback("#\{FN=[\"'](.+?)[\"'](|\,[\"'](.+?)[\"'])\}#i", "self::userFN", $tpl);
 		$blocks = self::$blocks;
+		$tpl = self::replacer($tpl, $blocks);
+		while(preg_match('~\[if (.+?)\]([^[]*)\[/if \\1\]~iU', $tpl)) {
+			$tpl = preg_replace_callback('~\[if (.+?)\]([^[]*)\[/if \\1\]~iU', ("templates::is"), $tpl);
+		}
+		return $tpl;
+	}
+
+	private static function replacer($tpl, $blocks, $arr = false, $head = "") {
 		foreach($blocks as $k => $v) {
-			if(!is_string($v) && !is_numeric($v)) {continue;}
-			$tpl = str_replace("{".$k."}", $v, $tpl);
+			if(is_array($v) || is_object($v)) {
+				$tpl = self::replacer($tpl, $v, true, $k.".");
+			} else if($arr===false && !is_string($v) && !is_numeric($v)) {continue;}
+			else
+			{
+				$tpl = str_replace("{".$head.$k."}", $v, $tpl);
+			}
 		}
 		return $tpl;
 	}
