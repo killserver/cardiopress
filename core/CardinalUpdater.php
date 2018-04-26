@@ -107,30 +107,32 @@ class CardinalUpdater {
 	}
 
 	public function modify_transient($transient) {
-		$all = $checked = $response = array();
-		foreach($transient->checked as $k => $v) {
-			$v = (object) array("version" => $v);
-			$v->type = "checked";
-			$all[$k] = $v;
-			$checked[$k] = $v;
-		}
-		foreach($transient->response as $k => $v) {
-			$v->type = "response";
-			$all[$k] = $v;
-			$response[$k] = $v;
-		}
-		foreach($all as $k => $v) {
-			$clear = $this->getClearName($k);
-			if(isset($this->responserAll[$clear])) {
-				$version = version_compare($this->responserAll[$clear]['version_now'], $checked[$k]->version, 'gt');
-				if($version && $v->type == "response" && isset($transient->response[$k])) {
-					unset($transient->response[$k]);
-					$transient->response[$k] = (object) $this->responserAll[$clear];
-				} else if(!$version) {
-					if(isset($transient->response[$k])) {
+		if(isset($transient->checked)) {
+			$all = $checked = $response = array();
+			foreach($transient->checked as $k => $v) {
+				$v = (object) array("version" => $v);
+				$v->type = "checked";
+				$all[$k] = $v;
+				$checked[$k] = $v;
+			}
+			foreach($transient->response as $k => $v) {
+				$v->type = "response";
+				$all[$k] = $v;
+				$response[$k] = $v;
+			}
+			foreach($all as $k => $v) {
+				$clear = $this->getClearName($k);
+				if(isset($this->responserAll[$clear])) {
+					$version = version_compare($this->responserAll[$clear]['version_now'], $checked[$k]->version, 'gt');
+					if($version && $v->type == "response" && isset($transient->response[$k])) {
 						unset($transient->response[$k]);
+						$transient->response[$k] = (object) $this->responserAll[$clear];
+					} else if(!$version) {
+						if(isset($transient->response[$k])) {
+							unset($transient->response[$k]);
+						}
+						$transient->no_update[$k] = (object) $this->responserAll[$clear];
 					}
-					$transient->no_update[$k] = (object) $this->responserAll[$clear];
 				}
 			}
 		}
