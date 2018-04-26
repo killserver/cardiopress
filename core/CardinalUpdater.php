@@ -33,25 +33,6 @@ class CardinalUpdater {
 		}
 	}
 
-	private function loadMainAliases($name = "", $data = "") {
-		if(is_null($this->responserMainAliases)) {
-			$request_uri = sprintf($this->server."?loadMainAliases=1"); // Build URI
-			$response = json_decode(wp_remote_retrieve_body(wp_remote_get($request_uri)), true); // Get JSON and parse it
-			$this->responserMainAliases = $response;
-		}
-		if($name!=="") {
-			if(isset($this->responserMainAliases[$name])) {
-				$ret = array_merge($data, $this->responserMainAliases[$name]);
-				if(isset($this->responserMainAliases[$name]['replacer'])) {
-					$ret = $this->replacer($this->responserMainAliases[$name]['replacer'], $ret);
-				}
-				return $ret;
-			} else {
-				return $data;
-			}
-		}
-	}
-
 	private function replacer($data, $arr) {
 		foreach($arr as $k => $v) {
 			$keys = array_keys($data);
@@ -98,12 +79,25 @@ class CardinalUpdater {
 	    }
 	}
 
-	public function initialize() {
-		add_filter('pre_set_site_transient_update_plugins', array($this, 'modify_transient'), 10, 1);
-		add_filter('site_transient_update_plugins', array($this, 'modify_transient'), 10, 1);
-		add_filter('plugins_api', array($this, 'plugin_popup'), 10, 3);
-		add_filter('plugins_api_result', array($this, 'plugin_add'), 10, 3);
-		add_filter('upgrader_post_install', array($this, 'after_install'), 10, 3);
+	private function pluginsInfo($v, $data) {
+		$arr = $v;
+		foreach($v as $k => $v) {
+			if(isset($data[$k])) {
+				$arr[$k] = $data[$k];
+			}
+		}
+		return $arr;
+	}
+
+	public function all_plugins($list) {
+		foreach($list as $k => $v) {
+			$clear = $this->getClearName($k);
+			if(isset($this->responserAll[$clear])) {
+				$info = $this->pluginsInfo($v, $this->responserAll[$clear]);
+				$list[$k] = $info;
+			}
+		}
+		return $list;
 	}
 
 	private function getClearName($file) {
@@ -112,51 +106,32 @@ class CardinalUpdater {
 		return $slug;
 	}
 
-	private function loadShort() {
-		if(!isset($this->shortData)) {
-	        $request_uri = sprintf($this->server."?short"); // Build URI
-	        $response = json_decode(wp_remote_retrieve_body(wp_remote_get($request_uri)), true); // Get JSON and parse it
-	        $this->shortData = $response; // Set it to our property
-		}
-	}
-
 	public function modify_transient($transient) {
-		$myUpdates = array();
-		if(property_exists($transient, 'checked')) { // Check if transient has a checked property
-			if($checked = $transient->checked) { // Did Wordpress check for updates?
-				foreach($transient->checked as $k => $v) {
-					unset($transient->checked[$k]);
-					$k = $this->getClearName($k);
-					$k = $this->loadAliases($k);
-					$transient->checked[$k] = $v;
-				}
-				$this->get_repository_info($transient->checked); // Get the repo info
-				foreach($transient->checked as $name => $version) {
-					$name = $this->getClearName($name);
-					$out_of_date = version_compare($this->responser[$name]['version_now'], $version, 'gt'); // Check if we're out of date
-					if($out_of_date) {
-						$new_files = $this->responser[$name]['download_link']; // Get the ZIP
-						$slug = $name; // Create valid slug
-						$plugin = array( // setup our plugin info
-							'url' => $this->plugin["PluginURI"],
-							'slug' => $slug,
-							'package' => $new_files,
-							'new_version' => $this->responser[$name]['version_now']
-						);
-						$myUpdates[$name] = true;
-						$transient->response[$name] = (object) $plugin; // Return it in response
-					}
-				}
-			}
+		$all = $checked = $response = array();
+		foreach($transient->checked as $k => $v) {
+			$v = (object) array("version" => $v);
+			$v->type = "checked";
+			$all[$k] = $v;
+			$checked[$k] = $v;
 		}
-		$this->loadShort();
-		foreach($this->shortData as $k => $v) {
+		foreach($transient->response as $k => $v) {
+			$v->type = "response";
+			$all[$k] = $v;
+			$response[$k] = $v;
+		}
+		foreach($all as $k => $v) {
 			$clear = $this->getClearName($k);
-			if(!isset($myUpdates[$clear])) {
-				if(isset($transient->response[$k])) {
+			if(isset($this->responserAll[$clear])) {
+				$version = version_compare($this->responserAll[$clear]['version_now'], $checked[$k]->version, 'gt');
+				if($version && $v->type == "response" && isset($transient->response[$k])) {
 					unset($transient->response[$k]);
+					$transient->response[$k] = (object) $this->responserAll[$clear];
+				} else if(!$version) {
+					if(isset($transient->response[$k])) {
+						unset($transient->response[$k]);
+					}
+					$transient->no_update[$k] = (object) $this->responserAll[$clear];
 				}
-				$transient->no_update[$k] = (object) $v;
 			}
 		}
 		return $transient; // Return filtered transient

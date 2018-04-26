@@ -22,6 +22,17 @@ function remove_wp_logo($wp_admin_bar) {
 	$wp_admin_bar->remove_node('wp-logo');
 }
 
+
+global $updater;
+add_filter('pre_set_site_transient_update_plugins', array($updater, 'modify_transient'), 10, 3);
+add_filter('site_transient_update_plugins', array($updater, 'modify_transient'), 10, 3);
+add_filter('plugins_api', array($updater, 'plugin_popup'), 10, 3);
+add_filter('plugins_api_result', array($updater, 'plugin_add'), 10, 3);
+add_filter('upgrader_post_install', array($updater, 'after_install'), 10, 3);
+add_filter('all_plugins', array($updater, 'all_plugins'), 10, 3);
+
+
+
 if(file_exists(PATH_CORE."menuSupport.php")) {
 	add_theme_support('menus');
 	require_once(PATH_CORE."menuSupport.php");
