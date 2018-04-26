@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Cardinal Engine
+ * Plugin Name: Legion
  * Description: Логика из Cardinal Engine обмазанная Wordpress-ом :-)
  * Plugin URI:  https://github.com/killserver/cardinal/tree/trunk/
  * Author URI:  https://github.com/killserver/

@@ -546,13 +546,13 @@ class templates {
 		} else {
 			$tpl = file_get_contents(PATH_SKINS."tmp".DS."main".self::$typeFile);
 		}
-		if($tmp==="") {
-			if(!file_exists(PATH_SKINS."tmp".DS."index".self::$typeFile)) {
-				self::ErrorTemplate(PATH_SKINS."tmp".DS."index".self::$typeFile);
+		if($tmp==="" || $tmp==="index") {
+			if(file_exists(PATH_SKINS."tmp".DS."index".self::$typeFile)) {
+				$tmp = file_get_contents(PATH_SKINS."tmp".DS."index".self::$typeFile);
 			}
-			$tmp = file_get_contents(PATH_SKINS."tmp".DS."index".self::$typeFile);
 		} else {
 			if(!file_exists(PATH_SKINS."tmp".DS.$tmp.self::$typeFile)) {
+				debug_print_backtrace();
 				self::ErrorTemplate(PATH_SKINS."tmp".DS.$tmp.self::$typeFile);
 			}
 			$tmp = file_get_contents(PATH_SKINS."tmp".DS.$tmp.self::$typeFile);
