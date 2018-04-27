@@ -5,6 +5,7 @@ if(!defined("IS_CORE")) {
 }
 require_once(PATH_CORE."Parser.php");
 require_once(PATH_CORE."templates.php");
+require_once(PATH_CORE."Settings.php");
 
 function array_map_recursive($f, $xs) {
 	$out = array();

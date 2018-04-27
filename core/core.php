@@ -7,13 +7,30 @@ if(!defined("IS_CORE")) {
 $cardinalCache = array();
 
 require_once(PATH_CORE."functions.php");
+if(file_exists(PATH_SKINS."custom-functions-default.php")) {
+	include_once(PATH_SKINS."custom-functions-default.php");
+} else if(file_exists(PATH_SKINS."custom-functions.php")) {
+	include_once(PATH_SKINS."custom-functions.php");
+}
+function clearNamePlugins($name) {
+	$name = explode("/", $name);
+	$name = current($name);
+	return $name;
+}
+function loadedDone() {
+	remove_action( 'woocommerce_tracker_send_event', 'action_woocommerce_tracker_send_event', 10, 1 );
+}
+add_action('wp_loaded', "loadedDone");
 
 add_action('wp', 'initial_builder');
 function initial_builder() {
 	global $tplSite, $cardinalCache;
 	$tplSite = "index";
 	$loaderPosts = false;
-	if(is_embed()) {
+	$legion = apply_filters("legion_initial_builder", false, $tplSite);
+	if($legion!==false) {
+		$tplSite = $legion;
+	} else if(is_embed()) {
 		$tplSite = "embed";
 	} else if(is_404()) {
 		$tplSite = "404";
