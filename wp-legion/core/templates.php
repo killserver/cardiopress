@@ -408,10 +408,21 @@ class templates {
 		}
 	}
 
+	private static function fors($arr) {
+		$tmp = $arr[3];
+		$ret = "";
+		$step = 1;
+		for($i=$arr[1];$i<=$arr[2];$i=$i+$step) {
+			$ret .= $tmp;
+		}
+		return $ret;
+	}
+
 	private static function compile($tpl) {
 		$tpl = preg_replace_callback("#\{S_(.+?)\}#i", "self::system", $tpl);
 		$tpl = preg_replace_callback("#\{C_(.+?)\}#i", "self::config", $tpl);
 		$tpl = preg_replace_callback("#\[FIELD=\[(.+?)\]\[(.+?)\]\](.+?)\[/FIELD\]#is", "self::fields", $tpl);
+		$tpl = preg_replace_callback("#\[for ([0-9]+) to ([0-9]+)\](.+?)\[/for\]#is", "self::fors", $tpl);
 		$tpl = preg_replace_callback("#\{field=[\"'](.+?)[\"'](|,([0-9]))\}#i", "self::getField", $tpl);
 		$tpl = preg_replace_callback("#\{MENU_\[(.+?)\](|\[(.+?)\])\}#i", "self::menu", $tpl);
 		$tpl = preg_replace_callback("#\[foreach block=(.+?)\](.+?)\[/foreach\]#is", "self::foreachs", $tpl);

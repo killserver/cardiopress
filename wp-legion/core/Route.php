@@ -23,13 +23,13 @@ class Route {
 		return true;
 	}
 
-	public static function Param($name = "") {
+	public static function Param($name = "", $default = false) {
 		if($name==="") {
 			return self::$_params;
 		} else if(isset(self::$_params[$name])) {
 			return self::$_params[$name];
 		} else {
-			return "";
+			return $default;
 		}
 	}
 
