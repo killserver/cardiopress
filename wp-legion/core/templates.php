@@ -372,7 +372,44 @@ class templates {
 		return "";
 	}
 
+	private static function system($arr) {
+		if($arr[1]=="rand") {
+			return rand();
+		} else if($arr[1]=="time") {
+			return time();
+		}
+	}
+
+	private static function getParam($arr) {
+		$g = Route::param($arr[1]);
+		return (is_array($g) ? $arr[0] : $g);
+	}
+
+	private static function router($arr) {
+		if(isset($arr[3])) {
+			$params = array();
+			$p = explode(";", $arr[3]);
+			for($i=0;$i<sizeof($p);$i++) {
+				$exp = explode("=", $p[$i]);
+				if(isset($exp[1])) {
+					$params[$exp[0]] = $exp[1];
+				} else {
+					$params[$exp[0]] = true;
+				}
+			}
+			$g = Route::Find($arr[1], $params);
+		} else {
+			$g = Route::Find($arr[1]);
+		}
+		if($g!==false) {
+			return $g;
+		} else {
+			return $arr[0];
+		}
+	}
+
 	private static function compile($tpl) {
+		$tpl = preg_replace_callback("#\{S_(.+?)\}#i", "self::system", $tpl);
 		$tpl = preg_replace_callback("#\{C_(.+?)\}#i", "self::config", $tpl);
 		$tpl = preg_replace_callback("#\[FIELD=\[(.+?)\]\[(.+?)\]\](.+?)\[/FIELD\]#is", "self::fields", $tpl);
 		$tpl = preg_replace_callback("#\{field=[\"'](.+?)[\"'](|,([0-9]))\}#i", "self::getField", $tpl);
@@ -386,6 +423,8 @@ class templates {
 		$tpl = preg_replace_callback("#\{META_\[(.+?)\](|\[(.+?)\])\}#i", "self::getMeta", $tpl);
 		$tpl = preg_replace_callback("#\{include (.+?)=[\"'](.+?)[\"']\}#i", "self::includer", $tpl);
 		$tpl = preg_replace_callback("#\{FN=[\"'](.+?)[\"'](|\,[\"'](.+?)[\"'])\}#i", "self::userFN", $tpl);
+		$tpl = preg_replace_callback("#\{R_\[(.+?)\](|\[(.+?)\])\}#", "self::router", $tpl);
+		$tpl = preg_replace_callback("#\{RP\[(.+?)\]\}#", "self::getParam", $tpl);
 		$blocks = self::$blocks;
 		$tpl = self::replacer($tpl, $blocks);
 		while(preg_match('~\[if (.+?)\]([^[]*)\[/if \\1\]~iU', $tpl)) {
@@ -583,7 +622,7 @@ class templates {
 		$tpl = str_replace("{THEME}", esc_url(get_template_directory_uri())."/tmp", $tpl);
 		$tpl = str_replace("{headers}", call_user_func_array("self::output_buffer_contents", array("wp_head")), $tpl);
 		$tpl = str_replace("{body_class}", call_user_func_array("self::output_buffer_contents", array("body_class")), $tpl);
-		$tpl = str_replace("</body>", call_user_func_array("self::output_buffer_contents", array("wp_footer"))."<style type=\"text/css\">#wpadminbar{background:#ac1f1f;-webkit-box-shadow:0em 0.1em 0.7em -0.25em #000;-moz-box-shadow:0em 0.1em 0.7em -0.25em #000;box-shadow:0em 0.1em 0.7em -0.25em #000;}#wpadminbar .ab-top-menu>li.hover>.ab-item, #wpadminbar.nojq .quicklinks .ab-top-menu>li>.ab-item:focus, #wpadminbar:not(.mobile) .ab-top-menu>li:hover>.ab-item, #wpadminbar:not(.mobile) .ab-top-menu>li>.ab-item:focus{background:#7d1515;}#wpadminbar:not(.mobile)>#wp-toolbar a:focus span.ab-label, #wpadminbar:not(.mobile)>#wp-toolbar li:hover span.ab-label, #wpadminbar>#wp-toolbar li.hover span.ab-label,#wpadminbar .quicklinks .ab-sub-wrapper .menupop.hover>a, #wpadminbar .quicklinks .menupop ul li a:focus, #wpadminbar .quicklinks .menupop ul li a:focus strong, #wpadminbar .quicklinks .menupop ul li a:hover, #wpadminbar .quicklinks .menupop ul li a:hover strong, #wpadminbar .quicklinks .menupop.hover ul li a:focus, #wpadminbar .quicklinks .menupop.hover ul li a:hover, #wpadminbar .quicklinks .menupop.hover ul li div[tabindex]:focus, #wpadminbar .quicklinks .menupop.hover ul li div[tabindex]:hover, #wpadminbar li #adminbarsearch.adminbar-focused:before, #wpadminbar li .ab-item:focus .ab-icon:before, #wpadminbar li .ab-item:focus:before, #wpadminbar li a:focus .ab-icon:before, #wpadminbar li.hover .ab-icon:before, #wpadminbar li.hover .ab-item:before, #wpadminbar li:hover #adminbarsearch:before, #wpadminbar li:hover .ab-icon:before, #wpadminbar li:hover .ab-item:before, #wpadminbar.nojs .quicklinks .menupop:hover ul li a:focus, #wpadminbar.nojs .quicklinks .menupop:hover ul li a:hover{color:#fff;}#wpadminbar .menupop .ab-sub-wrapper, #wpadminbar .shortlink-input{background:#ac1f1f;}</style></body>", $tpl);
+		$tpl = str_replace("</body>", call_user_func_array("self::output_buffer_contents", array("wp_footer"))."<style type=\"text/css\">#wpadminbar{background:#ac1f1f;-webkit-box-shadow:0em 0.1em 0.7em -0.25em #000;-moz-box-shadow:0em 0.1em 0.7em -0.25em #000;box-shadow:0em 0.1em 0.7em -0.25em #000;}#wpadminbar .ab-top-menu>li.hover>.ab-item, #wpadminbar.nojq .quicklinks .ab-top-menu>li>.ab-item:focus, #wpadminbar:not(.mobile) .ab-top-menu>li:hover>.ab-item, #wpadminbar:not(.mobile) .ab-top-menu>li>.ab-item:focus{background:#7d1515;}#wpadminbar:not(.mobile)>#wp-toolbar a:focus span.ab-label, #wpadminbar:not(.mobile)>#wp-toolbar li:hover span.ab-label, #wpadminbar>#wp-toolbar li.hover span.ab-label,#wpadminbar .quicklinks .ab-sub-wrapper .menupop.hover>a, #wpadminbar .quicklinks .menupop ul li a:focus, #wpadminbar .quicklinks .menupop ul li a:focus strong, #wpadminbar .quicklinks .menupop ul li a:hover, #wpadminbar .quicklinks .menupop ul li a:hover strong, #wpadminbar .quicklinks .menupop.hover ul li a:focus, #wpadminbar .quicklinks .menupop.hover ul li a:hover, #wpadminbar .quicklinks .menupop.hover ul li div[tabindex]:focus, #wpadminbar .quicklinks .menupop.hover ul li div[tabindex]:hover, #wpadminbar li #adminbarsearch.adminbar-focused:before, #wpadminbar li .ab-item:focus .ab-icon:before, #wpadminbar li .ab-item:focus:before, #wpadminbar li a:focus .ab-icon:before, #wpadminbar li.hover .ab-icon:before, #wpadminbar li.hover .ab-item:before, #wpadminbar li:hover #adminbarsearch:before, #wpadminbar li:hover .ab-icon:before, #wpadminbar li:hover .ab-item:before, #wpadminbar.nojs .quicklinks .menupop:hover ul li a:focus, #wpadminbar.nojs .quicklinks .menupop:hover ul li a:hover{color:#fff;}#wpadminbar .menupop .ab-sub-wrapper, #wpadminbar .shortlink-input{background:#ac1f1f;}#wpadminbar *:before {font:400 20px/1 dashicons;}</style></body>", $tpl);
 		echo $tpl;
 	}
 

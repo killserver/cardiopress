@@ -3,6 +3,7 @@ if(!defined("IS_CORE")) {
 	echo "403 ERROR";
 	die();
 }
+require_once(PATH_CORE."Route.php");
 require_once(PATH_CORE."Parser.php");
 require_once(PATH_CORE."templates.php");
 require_once(PATH_CORE."Settings.php");

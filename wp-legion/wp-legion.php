@@ -5,18 +5,22 @@
  * Plugin URI:  https://github.com/killserver/cardinal/tree/trunk/
  * Author URI:  https://github.com/killserver/
  * Author:      killserver
- * Version:     0.5.4
+ * Version:     0.5.5
 */
 
 // If this file is called directly, abort.
 if(!defined('WPINC')) {
-	die();
+	die;
 }
 
-define('PLUGIN_NAME_VERSION', '0.5.4');
+define('PLUGIN_NAME_VERSION', '0.5.5');
 
 define("IS_CORE", true);
-include_once(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.php");
+if(file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.php")) {
+	include_once(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.php");
+} else if(file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.default.php")) {
+	include_once(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.default.php");
+}
 
 $settings = get_option("legion");
 
@@ -54,20 +58,46 @@ function initial_cardinal_engine() {
 	if(!defined("IS_CORE")) {
 		define("IS_CORE", true);
 	}
-	include_once(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.php");
+	if(file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.php")) {
+		include_once(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.php");
+	} else if(file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.default.php")) {
+		include_once(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.default.php");
+	}
 	require_once(PATH_CORE."wp-func.php");
 	debugActivationLegion();
+	add_action('parse_request', 'read_wp_request');
+	//Route::Add("test", "(<lang>/)site(/<id>)", "calls");
+}
+
+function read_wp_request(&$wp) {
+	global $pageNow;
+	$pageNow = $wp->query_vars['pagename'];
+	$t = Route::Get($pageNow);
+	if($t!==false) {
+		die();
+	}
+    return false;
+}
+
+function getById($id, $type = "page") {
+	$my_posts = new WP_Query();
+	$my_posts = $my_posts->get_posts('post_type='.$type.'&p='.$id);
+	return (array) current($my_posts);
+}
+
+function getAll($args) {
+	$my_posts = new WP_Query();
+	$all = array();
+	$list = $my_posts->get_posts($args);
+	foreach($list as $k => $v) {
+		$all[$k] = (array) $v;
+	}
+	return $all;
 }
 
 add_action('admin_init', 'initial_plugins_cd');
 function initial_plugins_cd() {
 	global $updater;
-	add_filter('pre_set_site_transient_update_plugins', array($updater, 'modify_transient'), 10, 3);
-	add_filter('site_transient_update_plugins', array($updater, 'modify_transient'), 10, 3);
-	add_filter('plugins_api', array($updater, 'plugin_popup'), 10, 3);
-	add_filter('plugins_api_result', array($updater, 'plugin_add'), 10, 3);
-	add_filter('upgrader_post_install', array($updater, 'after_install'), 10, 3);
-	add_filter('all_plugins', array($updater, 'all_plugins'), 10, 3);
 }
 
 new CardinalSettings();
