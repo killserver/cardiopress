@@ -5,7 +5,7 @@
  * Plugin URI:  https://github.com/killserver/cardinal/tree/trunk/
  * Author URI:  https://github.com/killserver/
  * Author:      killserver
- * Version:     0.5.3
+ * Version:     0.5.4
 */
 
 // If this file is called directly, abort.
@@ -13,7 +13,7 @@ if(!defined('WPINC')) {
 	die();
 }
 
-define('PLUGIN_NAME_VERSION', '0.5.3');
+define('PLUGIN_NAME_VERSION', '0.5.4');
 
 define("IS_CORE", true);
 include_once(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.php");

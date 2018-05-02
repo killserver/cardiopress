@@ -30,6 +30,7 @@ add_filter('plugins_api', array($updater, 'plugin_popup'), 10, 3);
 add_filter('plugins_api_result', array($updater, 'plugin_add'), 10, 3);
 add_filter('upgrader_post_install', array($updater, 'after_install'), 10, 3);
 add_filter('all_plugins', array($updater, 'all_plugins'), 10, 3);
+add_filter('themes_api_result', array($updater, 'modify_transient_theme'), 10, 3);
 
 
 
