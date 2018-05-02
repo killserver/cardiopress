@@ -5,7 +5,7 @@
  * Plugin URI:  https://github.com/killserver/cardinal/tree/trunk/
  * Author URI:  https://github.com/killserver/
  * Author:      killserver
- * Version:     0.5.5.1
+ * Version:     0.5.6
 */
 
 // If this file is called directly, abort.
@@ -13,7 +13,7 @@ if(!defined('WPINC')) {
 	die;
 }
 
-define('LEGION_VERSION', '0.5.5.1');
+define('LEGION_VERSION', '0.5.6');
 
 define("IS_CORE", true);
 if(file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.php")) {
@@ -53,7 +53,7 @@ $updater = new CardinalUpdater(__FILE__, "http://killer.pp.ua/wp/");
 
 require_once(PATH_CORE."core.php");
 
-add_action('init', 'initial_cardinal_engine');
+add_action('init', 'initial_cardinal_engine', 20);
 function initial_cardinal_engine() {
 	if(!defined("IS_CORE")) {
 		define("IS_CORE", true);
@@ -65,18 +65,16 @@ function initial_cardinal_engine() {
 	}
 	require_once(PATH_CORE."wp-func.php");
 	debugActivationLegion();
-	add_action('parse_request', 'read_wp_request');
-	//Route::Add("test", "(<lang>/)site(/<id>)", "calls");
+	add_filter('request', 'read_wp_request');
 }
 
-function read_wp_request(&$wp) {
-	global $pageNow;
-	$pageNow = $wp->query_vars['pagename'];
-	$t = Route::Get($pageNow);
-	if($t!==false) {
-		die();
-	}
-    return false;
+function read_wp_request($wp) {
+	global $pageNow, $route, $call;
+	$pageNow = $wp['pagename'];
+	$routes = Route::Get($pageNow);
+	$route = current($routes);
+	$call = end($routes);
+    return $wp;
 }
 
 function getById($id, $type = "page") {

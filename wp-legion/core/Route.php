@@ -87,12 +87,7 @@ class Route {
 				}
 			}
 		}
-		if($ret!==false) {
-			if(is_callable($call)) {
-				call_user_func_array($call, array());
-			}
-		}
-		return $ret;
+		return array($ret, $call);
 	}
 
 	private static function Compile($uri, $regex = array()) {
