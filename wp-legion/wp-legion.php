@@ -5,7 +5,7 @@
  * Plugin URI:  https://github.com/killserver/cardinal/tree/trunk/
  * Author URI:  https://github.com/killserver/
  * Author:      killserver
- * Version:     0.5.6
+ * Version:     0.5.7
 */
 
 // If this file is called directly, abort.
@@ -13,7 +13,7 @@ if(!defined('WPINC')) {
 	die;
 }
 
-define('LEGION_VERSION', '0.5.6');
+define('LEGION_VERSION', '0.5.7');
 
 define("IS_CORE", true);
 if(file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.php")) {
@@ -66,27 +66,32 @@ function initial_cardinal_engine() {
 	require_once(PATH_CORE."wp-func.php");
 	debugActivationLegion();
 	add_filter('request', 'read_wp_request');
+	add_action("admin_bar_menu", "wp_admin_bar_edit_menu2", 90);
 }
 
-function read_wp_request($wp) {
-	global $pageNow, $route, $call;
-	$pageNow = $wp['pagename'];
-	$routes = Route::Get($pageNow);
-	$route = current($routes);
-	$call = end($routes);
-    return $wp;
+function addAdminBarEdit($id, $type = "post") {
+	global $wp_admin_bar;
+	if(!empty($type) && ($post_type_object = get_post_type_object($type)) && current_user_can('edit_post', $id) && $post_type_object->show_in_admin_bar && $edit_post_link = get_edit_post_link($id)) {
+		$wp_admin_bar->add_menu(array(
+			'id' => 'edit',
+			'title' => $post_type_object->labels->edit_item,
+			'href' => $edit_post_link
+		));
+	}
 }
 
-function getById($id, $type = "page") {
+function getById($id, $type = "post") {
+	global $post, $wp_the_query;
 	$my_posts = new WP_Query();
-	$my_posts = $my_posts->get_posts('post_type='.$type.'&p='.$id);
-	return (array) current($my_posts);
+	$my_posts = $my_posts->query('post_type='.$type.'&post_id='.$id);
+	$wp_the_query->queried_object = $post = $my_posts = current($my_posts);
+	return (array) $my_posts;
 }
 
 function getAll($args) {
 	$my_posts = new WP_Query();
 	$all = array();
-	$list = $my_posts->get_posts($args);
+	$list = $my_posts->query($args);
 	foreach($list as $k => $v) {
 		$all[$k] = (array) $v;
 	}

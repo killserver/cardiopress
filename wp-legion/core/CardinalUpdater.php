@@ -110,7 +110,7 @@ class CardinalUpdater {
 		$install = array(
 			"name" => "Cardinal",
 			"slug" => "cardinal-themes",
-			"version" => "1.1",
+			"version" => "1.2",
 			"preview_url" => get_site_url(),
 			"author" => "killserver",
 			"screenshot_url" => "http://kratko-news.com/wp-content/uploads/2013/04/%D0%BA%D0%B0%D1%80%D0%B4%D0%B8%D0%BD%D0%B0%D0%BB-%D0%BA%D0%BE%D1%85.jpg",
@@ -118,8 +118,8 @@ class CardinalUpdater {
 			"num_ratings" => "1",
 			"downloaded" => "1",
 			"last_updated" => "2018-04-03",
-			"download_link" => "http://medik.local/update/cardinal-themes.zip",
-			"homepage" => "https://wordpress.org/themes/twentyseventeen/",
+			"download_link" => "https://github.com/killserver/wp-legion/raw/master/cardinal-themes.zip",
+			"homepage" => "https://wordpress.org/",
 			"description" => "Тема \"Cardinal Engine\" поможет Вам с быстрым началом работы с плагином <b>\"wp-legion\"</b>",
 		);
 		if($type=="query_themes") {

@@ -1,5 +1,31 @@
 <?php
 remove_action('wp_head', 'wp_generator');
+remove_action('wp_head', 'rsd_link');
+remove_action('wp_head', 'wlwmanifest_link');
+remove_action('wp_head', 'wp_generator');
+remove_action('wp_head', 'wp_shortlink_wp_head');
+if(!defined('DISALLOW_FILE_EDIT')) {
+	define('DISALLOW_FILE_EDIT', true);
+}
+add_theme_support('html5', array('search-form', 'comment-form', 'comment-list', 'gallery', 'caption'));
+add_action('wp_head', 'wpse_custom_generator_meta_tag');
+add_action('admin_bar_menu', 'remove_wp_logo', 999);
+// Обновления
+global $updater;
+add_filter('pre_set_site_transient_update_plugins', array($updater, 'modify_transient'), 10, 3);
+add_filter('site_transient_update_plugins', array($updater, 'modify_transient'), 10, 3);
+add_filter('plugins_api', array($updater, 'plugin_popup'), 10, 3);
+add_filter('plugins_api_result', array($updater, 'plugin_add'), 10, 3);
+add_filter('upgrader_post_install', array($updater, 'after_install'), 10, 3);
+add_filter('all_plugins', array($updater, 'all_plugins'), 10, 3);
+add_filter('themes_api_result', array($updater, 'modify_transient_theme'), 10, 3);
+// Обновления
+add_filter('admin_footer_text', 'custom_admin_footer');
+
+function remove_wp_logo($wp_admin_bar) {
+	$wp_admin_bar->remove_node('wp-logo');
+}
+
 function wpse_custom_generator_meta_tag() {
 	if(!file_exists(PATH_CACHE."version.txt")) {
 		if(!file_exists(PATH_CACHE)) {
@@ -16,45 +42,91 @@ function wpse_custom_generator_meta_tag() {
 	}
 	echo '<meta name="generator" content="Cardinal Engine '.$prs.'" />'."\n";
 }
-add_action('wp_head', 'wpse_custom_generator_meta_tag');
-add_action('admin_bar_menu', 'remove_wp_logo', 999);
-function remove_wp_logo($wp_admin_bar) {
-	$wp_admin_bar->remove_node('wp-logo');
-}
-
-
-global $updater;
-add_filter('pre_set_site_transient_update_plugins', array($updater, 'modify_transient'), 10, 3);
-add_filter('site_transient_update_plugins', array($updater, 'modify_transient'), 10, 3);
-add_filter('plugins_api', array($updater, 'plugin_popup'), 10, 3);
-add_filter('plugins_api_result', array($updater, 'plugin_add'), 10, 3);
-add_filter('upgrader_post_install', array($updater, 'after_install'), 10, 3);
-add_filter('all_plugins', array($updater, 'all_plugins'), 10, 3);
-add_filter('themes_api_result', array($updater, 'modify_transient_theme'), 10, 3);
-
-
 
 if(file_exists(PATH_CORE."menuSupport.php")) {
 	add_theme_support('menus');
 	require_once(PATH_CORE."menuSupport.php");
 }
 
-remove_action('wp_head', 'rsd_link');
-remove_action('wp_head', 'wlwmanifest_link');
-remove_action('wp_head', 'wp_generator');
-remove_action('wp_head', 'wp_shortlink_wp_head');
-if(!defined('DISALLOW_FILE_EDIT')) {
-	define('DISALLOW_FILE_EDIT', true);
-}
-add_theme_support('html5', array(
-	'search-form', 'comment-form', 'comment-list', 'gallery', 'caption',
-));
-
 function custom_admin_footer() {
 echo '<span id="footer-thankyou">Спасибо вам за творчество с <a href="https://ru.wordpress.org/">WordPress</a> и ядром <a href="https://github.com/killserver/cardinal/tree/trunk/">Cardinal Engine</a>.</span>';
 }
-add_filter('admin_footer_text', 'custom_admin_footer');
 
+function read_wp_request($wp) {
+	global $pageNow, $route, $call;
+	$pageNow = $wp['pagename'];
+	$routes = Route::Get($pageNow);
+	$route = current($routes);
+	$call = end($routes);
+    return $wp;
+}
+
+function wp_admin_bar_edit_menu2($wp_admin_bar) {
+	global $tag, $wp_the_query, $user_id, $post;
+	if(is_admin()) {
+		$current_screen = get_current_screen();
+		if('post' == $current_screen->base && 'add' != $current_screen->action && ($post_type_object = get_post_type_object($post->post_type)) && current_user_can('read_post', $post->ID) && ($post_type_object->public) && ( $post_type_object->show_in_admin_bar)) {
+			if('draft' == $post->post_status) {
+				$preview_link = get_preview_post_link($post);
+				$wp_admin_bar->add_menu(array(
+					'id' => 'preview',
+					'title' => $post_type_object->labels->view_item,
+					'href' => esc_url($preview_link),
+					'meta' => array('target' => 'wp-preview-'.$post->ID),
+				));
+			} else {
+				$wp_admin_bar->add_menu(array(
+					'id' => 'view',
+					'title' => $post_type_object->labels->view_item,
+					'href' => get_permalink($post->ID)
+				));
+			}
+		} elseif('edit' == $current_screen->base && ($post_type_object = get_post_type_object($current_screen->post_type)) && ($post_type_object->public) && ($post_type_object->show_in_admin_bar) && (get_post_type_archive_link($post_type_object->name)) && !('post' === $post_type_object->name && 'posts' === get_option('show_on_front'))) {
+ 			$wp_admin_bar->add_node(array(
+ 				'id' => 'archive',
+ 				'title' => $post_type_object->labels->view_items,
+ 				'href' => get_post_type_archive_link($current_screen->post_type)
+ 			));
+		} elseif('term' == $current_screen->base && isset($tag) && is_object($tag) && !is_wp_error($tag) && ($tax = get_taxonomy($tag->taxonomy)) && $tax->public) {
+			$wp_admin_bar->add_menu(array(
+				'id' => 'view',
+				'title' => $tax->labels->view_item,
+				'href' => get_term_link($tag)
+			));
+		} elseif('user-edit' == $current_screen->base && isset($user_id) && ($user_object = get_userdata($user_id)) && $user_object->exists() && $view_link = get_author_posts_url($user_object->ID))
+		{
+			$wp_admin_bar->add_menu(array(
+				'id'    => 'view',
+				'title' => __('View User'),
+				'href'  => $view_link,
+			));
+		}
+	} else {
+		$current_object = $wp_the_query->get_queried_object();
+		if(empty($current_object)) {
+			return;
+		}
+		if(!empty($current_object->post_type) && ($post_type_object = get_post_type_object($current_object->post_type)) && current_user_can('edit_post', $current_object->ID) && $post_type_object->show_in_admin_bar && $edit_post_link = get_edit_post_link($current_object->ID)) {
+			$wp_admin_bar->add_menu(array(
+				'id' => 'edit',
+				'title' => $post_type_object->labels->edit_item,
+				'href' => $edit_post_link
+			));
+		} elseif(!empty($current_object->taxonomy) && ($tax = get_taxonomy($current_object->taxonomy)) && current_user_can('edit_term', $current_object->term_id) && $edit_term_link = get_edit_term_link($current_object->term_id, $current_object->taxonomy)) {
+			$wp_admin_bar->add_menu(array(
+				'id' => 'edit',
+				'title' => $tax->labels->edit_item,
+				'href' => $edit_term_link
+			));
+		} elseif(is_a($current_object, 'WP_User') && current_user_can('edit_user', $current_object->ID) && $edit_user_link = get_edit_user_link($current_object->ID)) {
+			$wp_admin_bar->add_menu(array(
+				'id'    => 'edit',
+				'title' => __('Edit User'),
+				'href'  => $edit_user_link,
+			));
+		}
+	}
+}
 
 //add_action( 'admin_menu', 'remove_menus' );
 function remove_menus(){

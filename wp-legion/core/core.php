@@ -7,8 +7,8 @@ if(!defined("IS_CORE")) {
 $cardinalCache = array();
 
 require_once(PATH_CORE."functions.php");
-if(file_exists(PATH_SKINS."custom-functions-default.php")) {
-	include_once(PATH_SKINS."custom-functions-default.php");
+if(file_exists(PATH_SKINS."custom-functions.default.php")) {
+	include_once(PATH_SKINS."custom-functions.default.php");
 } else if(file_exists(PATH_SKINS."custom-functions.php")) {
 	include_once(PATH_SKINS."custom-functions.php");
 }
@@ -17,6 +17,7 @@ function clearNamePlugins($name) {
 	$name = current($name);
 	return $name;
 }
+
 function loadedDone() {
 	remove_action( 'woocommerce_tracker_send_event', 'action_woocommerce_tracker_send_event', 10, 1 );
 }
@@ -107,7 +108,9 @@ function initial_builder() {
 	} else {
 		addDataPost();
 	}
-	if(file_exists(PATH_SKINS."site.php")) {
+	if(file_exists(PATH_SKINS."site.default.php")) {
+		include_once(PATH_SKINS."site.default.php");
+	} else if(file_exists(PATH_SKINS."site.php")) {
 		include_once(PATH_SKINS."site.php");
 	}
 }
