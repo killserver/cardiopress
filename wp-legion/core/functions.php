@@ -7,6 +7,7 @@ require_once(PATH_CORE."Route.php");
 require_once(PATH_CORE."Parser.php");
 require_once(PATH_CORE."templates.php");
 require_once(PATH_CORE."Settings.php");
+require_once(PATH_CORE."cyr-to-lat.php");
 
 function array_map_recursive($f, $xs) {
 	$out = array();
@@ -51,6 +52,21 @@ function vdump() {
 				echo $fn[$i];
 			}
 		}
+	}
+	echo "</pre>";
+	if(function_exists("onlyEcho")) {
+		onlyEcho(false);
+	}
+}
+
+function vecho() {
+	$d = debug_backtrace();
+	echo "<pre class=\"debug_backtrace\" style=\"margin-left:".(is_admin() ? "160" : "0")."px; margin-right:0px; padding:10px; color:black; text-align:left; font-size: 12px;".(is_admin() ? "padding-bottom:60px;" : "background-color:ghostwhite; border:solid 1px black;")."\">";
+	echo "<small style='font-size:12px'>".($d[0]['file']." [".$d[0]['line']."]")."</small><br><br>\n\n";
+	$fn = func_get_args();
+	$fn = array_map_recursive("htmlspecialchars_cardinal", $fn);
+	for($i=0;$i<func_num_args();$i++) {
+		echo $fn[$i];
 	}
 	echo "</pre>";
 	if(function_exists("onlyEcho")) {

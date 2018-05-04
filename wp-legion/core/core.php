@@ -7,10 +7,10 @@ if(!defined("IS_CORE")) {
 $cardinalCache = array();
 
 require_once(PATH_CORE."functions.php");
-if(file_exists(PATH_SKINS."custom-functions.default.php")) {
-	include_once(PATH_SKINS."custom-functions.default.php");
-} else if(file_exists(PATH_SKINS."custom-functions.php")) {
+if(file_exists(PATH_SKINS."custom-functions.php")) {
 	include_once(PATH_SKINS."custom-functions.php");
+} else if(file_exists(PATH_SKINS."custom-functions.default.php")) {
+	include_once(PATH_SKINS."custom-functions.default.php");
 }
 function clearNamePlugins($name) {
 	$name = explode("/", $name);
@@ -19,7 +19,7 @@ function clearNamePlugins($name) {
 }
 
 function loadedDone() {
-	remove_action( 'woocommerce_tracker_send_event', 'action_woocommerce_tracker_send_event', 10, 1 );
+	remove_action('woocommerce_tracker_send_event', 'action_woocommerce_tracker_send_event', 10, 1);
 }
 add_action('wp_loaded', "loadedDone");
 
@@ -73,6 +73,11 @@ function initial_builder() {
 	if(empty($tplSite) || $tplSite=="index" || is_home()) {
 		$tplSite = "index";
 	}
+	$tplSites = apply_filters("legion_after_initial_builder", $tplSite);
+	if(!empty($tplSites)) {
+		$tplSite = $tplSites;
+	}
+	apply_filters_ref_array("legion_after_initial_ref", array(&$tplSite));
 	if(post_password_required()) {
 	?>
 		<form class="form-postpass" method="post" action="/wp-login.php?action=postpass">
@@ -90,7 +95,9 @@ function initial_builder() {
 	}
 	
 	$blockNameForCycle = $tplSite;
-	$cardinalCache['loaderPosts'] = $loaderPosts;
+	if(!isset($cardinalCache['loaderPosts'])) {
+		$cardinalCache['loaderPosts'] = $loaderPosts;
+	}
 	$cardinalCache['blockNameForCycle'] = $blockNameForCycle;
 	
 	if(isset($cardinalCache['loaderPosts']) && isset($cardinalCache['blockNameForCycle']) && $cardinalCache['loaderPosts']===true) {
@@ -108,9 +115,9 @@ function initial_builder() {
 	} else {
 		addDataPost();
 	}
-	if(file_exists(PATH_SKINS."site.default.php")) {
-		include_once(PATH_SKINS."site.default.php");
-	} else if(file_exists(PATH_SKINS."site.php")) {
+	if(file_exists(PATH_SKINS."site.php")) {
 		include_once(PATH_SKINS."site.php");
+	} else if(file_exists(PATH_SKINS."site.default.php")) {
+		include_once(PATH_SKINS."site.default.php");
 	}
 }

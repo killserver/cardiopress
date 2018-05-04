@@ -9,7 +9,7 @@ class Route {
 	private static $router = array();
 	private static $_params = array();
 
-	public static function Add($name, $regex, $call, array $def = array()) {
+	public static function Add($name, $regex, $call = "", array $def = array()) {
 		self::$router[$name] = array("regex" => $regex, "call" => $call, "default" => $def);
 		return true;
 	}

@@ -5,7 +5,7 @@
  * Plugin URI:  https://github.com/killserver/cardinal/tree/trunk/
  * Author URI:  https://github.com/killserver/
  * Author:      killserver
- * Version:     0.5.7
+ * Version:     0.5.8
 */
 
 // If this file is called directly, abort.
@@ -13,7 +13,7 @@ if(!defined('WPINC')) {
 	die;
 }
 
-define('LEGION_VERSION', '0.5.7');
+define('LEGION_VERSION', '0.5.8');
 
 define("IS_CORE", true);
 if(file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.php")) {
@@ -80,12 +80,68 @@ function addAdminBarEdit($id, $type = "post") {
 	}
 }
 
+function getArray(&$data) {
+	foreach($data as $k => $v) {
+		$data[$k] = getDatas($v);
+	}
+}
+
+function getDatas($data) {
+	if(is_numeric($data) || is_string($data)) {
+		return $data;
+	} else if(is_array($data)) {
+		foreach($data as $k => $v) {
+			$data[$k] = getDatas($v);
+		}
+		return $data;
+	} else if(is_object($data)) {
+		$data = (array) $data;
+		foreach($data as $k => $v) {
+			$data[$k] = getDatas($v);
+		}
+		return $data;
+	}
+	return $data;
+}
+
 function getById($id, $type = "post") {
 	global $post, $wp_the_query;
 	$my_posts = new WP_Query();
 	$my_posts = $my_posts->query('post_type='.$type.'&post_id='.$id);
 	$wp_the_query->queried_object = $post = $my_posts = current($my_posts);
 	return (array) $my_posts;
+}
+
+function getByName($id, $type = "post") {
+	global $post, $wp_the_query;
+	$my_posts = new WP_Query();
+	$my_posts = $my_posts->query('post_type='.$type.'&name='.$id);
+	$wp_the_query->queried_object = $post = $my_posts = current($my_posts);
+	return (array) $my_posts;
+}
+
+function getByTax($tax, $terms = array()) {
+	global $post, $wp_the_query;
+	if(!is_array($terms)) {
+		$terms = array($terms);
+	}
+	$my_posts = new WP_Query();
+	$my_posts = $my_posts->query(array(
+		'post_type' => 'post',
+		'numberposts' => -1,
+		'tax_query' => array(
+			array(
+				'field' => 'slug',
+				"taxonomy" => $tax,
+				'terms' => $terms
+			),
+		),
+	));
+	$all = array();
+	foreach($my_posts as $k => $v) {
+		$all[$k] = (array) $v;
+	}
+	return $all;
 }
 
 function getAll($args) {
@@ -98,38 +154,50 @@ function getAll($args) {
 	return $all;
 }
 
+function getByCatName($name, $args = array(), $typeSearch = false) {
+	if($typeSearch===false) {
+		if(preg_match("#([0-9]+)#", $name)) {
+			$typeSearch = "term_id";
+		} else if(preg_match("#([a-zA-Z0-9]+)#", $name)) {
+			$typeSearch = "slug";
+		} else if(preg_match("#([a-zA-Z0-9а-яА-ЯёЁ]+)#", $name)) {
+			$typeSearch = "name";
+		}
+	}
+	$def = array(
+		'post_type' => 'post',
+		'tax_query' => array(
+			array(
+				'taxonomy' => 'category',
+				'field' => $typeSearch,
+				'terms' => $name,
+			)
+		)
+	);
+	$args = array_merge($def, $args);
+	return getAll($args);
+}
+
+function getAllCategory(array $args = array()) {
+global $catList;
+	$def = array(
+		'taxonomy' => 'category',
+		"hide_empty" => 0,
+	);
+	$args = array_merge($def, $args);
+	$key = md5(json_encode($array));
+	if(is_null($catList)) {
+		$catList = array();
+	}
+	if(!isset($catList[$key])) {
+		$catList[$key] = get_categories($args);
+	}
+	return $catList[$key];
+}
+
 add_action('admin_init', 'initial_plugins_cd');
 function initial_plugins_cd() {
 	global $updater;
 }
 
 new CardinalSettings();
-
-function legion_settings_adm() {
-	global $wpdb, $my_plugin_hook;
-	if(isset($_POST['edit'])) {
-		update_option("wp_legion_debug", $_POST['debug'], "yes");
-		var_dump($_POST);die();
-	}
-	?>
-	<div class="wrap">
-		<form method="post" action="<?php echo preg_replace( '/\\&.*/', '', $_SERVER['REQUEST_URI'] ); ?>">
-			<input type="hidden" name="edit" value="1">
-			<h3 id="new-custom-option"><?php _e("Управление легионом"); ?></h3>
-			<table class="form-table">
-				<tbody>
-				<tr>
-					<th scope="row">
-						<label for="value">Активация дебага:</label>
-					</td>
-					<td>
-						<label><input id="should-clear-table" name="debug" type="checkbox" value="true"<?php echo(get_option("wp_legion_debug")=="true" ? " checked=\"checked\"" : ""); ?>></label><br/>
-					</td>
-				</tr>
-				</tbody>
-			</table>
-			<?php submit_button(); ?>
-		</form>
-	</div>
-	<?php
-}

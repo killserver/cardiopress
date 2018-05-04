@@ -42,12 +42,16 @@ class CardinalSettings {
 		register_setting('legion_settings_group', 'legion', array($this, 'sanitize'));
 		add_settings_section('legion_settings_section', 'Дебаг', array($this, 'legion_settings_section'), 'legion-settings-page');
 		add_settings_field('legion_debug', 'Активация дебага', array($this, 'legion_setting1_html'), 'legion-settings-page', 'legion_settings_section');
+		add_settings_field('legion_category', 'Отключение "/category/" для категорий', array($this, 'legion_setting2_html'), 'legion-settings-page', 'legion_settings_section');
 	}
 
 	public function sanitize($input) {
 		$sanitized_input = array();
 		if(isset($_POST['legion_debug'])) {
 			$sanitized_input['legion_debug'] = sanitize_text_field($_POST['legion_debug']);
+		}
+		if(isset($_POST['legion_category'])) {
+			$sanitized_input['legion_category'] = sanitize_text_field($_POST['legion_category']);
 		}
 		return $sanitized_input;
 	}
@@ -58,5 +62,8 @@ class CardinalSettings {
 	 */
 	public function legion_setting1_html() {
 		echo '<input type="checkbox" id="legion_debug" name="legion_debug" value="1"'.(isset($this->options['legion_debug']) ? " checked=\"checked\"" : '').' />';
+	}
+	public function legion_setting2_html() {
+		echo '<input type="checkbox" id="legion_category" name="legion_category" value="1"'.(isset($this->options['legion_category']) ? " checked=\"checked\"" : '').' />';
 	}
 }

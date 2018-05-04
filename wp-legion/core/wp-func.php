@@ -8,6 +8,7 @@ if(!defined('DISALLOW_FILE_EDIT')) {
 	define('DISALLOW_FILE_EDIT', true);
 }
 add_theme_support('html5', array('search-form', 'comment-form', 'comment-list', 'gallery', 'caption'));
+add_theme_support('title-tag');
 add_action('wp_head', 'wpse_custom_generator_meta_tag');
 add_action('admin_bar_menu', 'remove_wp_logo', 999);
 // Обновления
@@ -22,8 +23,17 @@ add_filter('themes_api_result', array($updater, 'modify_transient_theme'), 10, 3
 // Обновления
 add_filter('admin_footer_text', 'custom_admin_footer');
 
+$settings = get_option("legion");
+if(isset($settings['legion_category'])) {
+	add_filter('category_link', 'true_remove_category_from_category', 1, 1);
+}
+
 function remove_wp_logo($wp_admin_bar) {
 	$wp_admin_bar->remove_node('wp-logo');
+}
+function true_remove_category_from_category($cat_url) {
+	$cat_url = str_replace('/category', '', $cat_url);
+	return $cat_url;
 }
 
 function wpse_custom_generator_meta_tag() {
@@ -54,10 +64,12 @@ echo '<span id="footer-thankyou">Спасибо вам за творчество
 
 function read_wp_request($wp) {
 	global $pageNow, $route, $call;
-	$pageNow = $wp['pagename'];
-	$routes = Route::Get($pageNow);
-	$route = current($routes);
-	$call = end($routes);
+	if(isset($wp['pagename'])) {
+		$pageNow = $wp['pagename'];
+		$routes = Route::Get($pageNow);
+		$route = current($routes);
+		$call = end($routes);
+	}
     return $wp;
 }
 
