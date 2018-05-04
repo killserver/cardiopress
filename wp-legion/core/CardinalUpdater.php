@@ -152,8 +152,10 @@ class CardinalUpdater {
 				$clear = $this->getClearName($k);
 				if(isset($this->responserAll[$clear])) {
 					$version = version_compare($this->responserAll[$clear]['version_now'], $checked[$k]->version, 'gt');
-					if($version && $v->type == "response" && isset($transient->response[$k])) {
-						unset($transient->response[$k]);
+					if($version && ($v->type == "response" || $v->type == "checked")) {
+						if(isset($transient->response[$k])) {
+							unset($transient->response[$k]);
+						}
 						$transient->response[$k] = (object) $this->responserAll[$clear];
 					} else if(!$version) {
 						if(isset($transient->response[$k])) {
