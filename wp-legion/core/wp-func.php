@@ -28,6 +28,27 @@ if(isset($settings['legion_category'])) {
 	add_filter('category_link', 'true_remove_category_from_category', 1, 1);
 }
 
+function debug_admin_menus() {
+    global $submenu, $menu, $pagenow;
+    $settings = get_option("legion");
+    if(isset($settings['legion_submenu'])) {
+		foreach($settings['legion_submenu'] as $k => $v) {
+			$key = array_keys($v);
+			for($i=0;$i<sizeof($key);$i++) {
+				remove_submenu_page($k, $key[$i]);
+			}
+		}
+	}
+	if(isset($settings['legion_menu'])) {
+		foreach($menu as $k => $v) {
+			if(isset($settings['legion_menu'][$v[2]])) {
+				remove_menu_page($v[2]);
+			}
+		}
+	}
+}
+add_action('admin_menu', 'debug_admin_menus', 9999);
+
 function remove_wp_logo($wp_admin_bar) {
 	$wp_admin_bar->remove_node('wp-logo');
 }
