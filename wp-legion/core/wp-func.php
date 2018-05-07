@@ -102,6 +102,11 @@ function custom_admin_footer() {
 echo '<span id="footer-thankyou">Спасибо вам за творчество с <a href="https://ru.wordpress.org/">WordPress</a> и ядром <a href="https://github.com/killserver/cardinal/tree/trunk/">Cardinal Engine</a>.</span>';
 }
 
+function custom_loginlogo() {
+	echo '<style>.login h1 a { display: none; } #login { padding: 0px; } body { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; height: 100vh; }</style>';
+}
+add_action('login_head', 'custom_loginlogo', 9999999999999);
+
 function read_wp_request($wp) {
 	global $pageNow, $route, $call;
 	if(isset($wp['pagename'])) {
