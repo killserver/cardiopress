@@ -28,26 +28,45 @@ if(isset($settings['legion_category'])) {
 	add_filter('category_link', 'true_remove_category_from_category', 1, 1);
 }
 
-function debug_admin_menus() {
+function change_admin_menus() {
     global $submenu, $menu, $pagenow;
+    if(isset($_GET['dev'])) {
+    	return false;
+    }
     $settings = get_option("legion");
     if(isset($settings['legion_submenu'])) {
 		foreach($settings['legion_submenu'] as $k => $v) {
 			$key = array_keys($v);
 			for($i=0;$i<sizeof($key);$i++) {
+				$key[$i] = urldecode($key[$i]);
 				remove_submenu_page($k, $key[$i]);
+				if(isset($settings['legion_save_menu']) && $pagenow==$key[$i]) {
+					header("Location: index.php");die();
+				}
 			}
 		}
 	}
 	if(isset($settings['legion_menu'])) {
+		$menus = array_map("urldecode", array_keys($settings['legion_menu']));
 		foreach($menu as $k => $v) {
-			if(isset($settings['legion_menu'][$v[2]])) {
+			if(in_array($v[2], $menus)) {
 				remove_menu_page($v[2]);
+				if(isset($settings['legion_save_menu']) && ((isset($_GET['page']) && $_GET['page']==$v[2]) || $pagenow==$v[2])) {
+					header("Location: index.php");die();
+				}
 			}
 		}
 	}
 }
-add_action('admin_menu', 'debug_admin_menus', 9999);
+add_action('admin_menu', 'change_admin_menus', 9999);
+
+function change_post_object_label() {
+    global $wp_post_types;
+    foreach($wp_post_types as $page => $data) {
+		$wp_post_types[$page]->label = "test";
+	}
+}
+add_action( 'admin_init', 'change_post_object_label' );
 
 function remove_wp_logo($wp_admin_bar) {
 	$wp_admin_bar->remove_node('wp-logo');

@@ -17,8 +17,6 @@ class CardinalUpdater {
 		$this->basename = plugin_basename( $this->file );
 		add_action('admin_init', array($this, 'set_plugin_properties'));
 		$this->server = $server;
-		$this->get_repository_all();
-		$this->loadAliases();
 		return $this;
 	}
 
@@ -43,6 +41,8 @@ class CardinalUpdater {
 	}
 
 	public function set_plugin_properties() {
+		$this->get_repository_all();
+		$this->loadAliases();
 		$this->plugin	= get_plugin_data($this->file);
 		$this->basename = plugin_basename($this->file);
 		$this->active	= is_plugin_active($this->basename);

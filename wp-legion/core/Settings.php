@@ -44,6 +44,7 @@ class CardinalSettings {
 		add_settings_field('legion_debug', 'Активация дебага', array($this, 'legion_setting1_html'), 'legion-settings-page', 'legion_settings_section');
 		add_settings_field('legion_category', 'Отключение "/category/" для категорий', array($this, 'legion_setting2_html'), 'legion-settings-page', 'legion_settings_section');
 		add_settings_field('legion_menu', 'Редактор меню', array($this, 'legion_setting3_html'), 'legion-settings-page', 'legion_settings_section');
+		add_settings_field('legion_saver_menu', 'Защита закрытого меню', array($this, 'legion_setting4_html'), 'legion-settings-page', 'legion_settings_section');
 	}
 
 	public function sanitize($input) {
@@ -59,6 +60,9 @@ class CardinalSettings {
 		}
 		if(isset($_POST['legion_submenu'])) {
 			$sanitized_input['legion_submenu'] = ($_POST['legion_submenu']);
+		}
+		if(isset($_POST['legion_save_menu'])) {
+			$sanitized_input['legion_save_menu'] = ($_POST['legion_save_menu']);
 		}
 		return $sanitized_input;
 	}
@@ -115,11 +119,14 @@ class CardinalSettings {
 					$skeys = array_keys($subMenuShow[$menuShow[$keys[$i]][2]]);
 					for($z=0;$z<sizeof($subMenuShow[$menuShow[$keys[$i]][2]]);$z++) {
 						$subpage = $subMenuShow[$menuShow[$keys[$i]][2]][$skeys[$z]][2];
-						echo '<div><label for="'.$page."-".$subpage.'" class="submenu"><input type="checkbox" id="'.$page."-".$subpage.'" name="legion_submenu['.$page.']['.$subpage.']" value="'.strip_tags($subMenuShow[$menuShow[$keys[$i]][2]][$skeys[$z]][0]).'"'.(isset($this->options['legion_submenu'][$page][$subpage]) ? " checked=\"checked\"" : '').' />'.$subMenuShow[$menuShow[$keys[$i]][2]][$skeys[$z]][0]."</label></div>";
+						echo '<div><label for="'.$page."-".$subpage.'" class="submenu"><input type="checkbox" id="'.$page."-".$subpage.'" name="legion_submenu['.$page.']['.urlencode($subpage).']" value="'.strip_tags($subMenuShow[$menuShow[$keys[$i]][2]][$skeys[$z]][0]).'"'.(isset($this->options['legion_submenu'][$page][$subpage]) ? " checked=\"checked\"" : '').' />'.$subMenuShow[$menuShow[$keys[$i]][2]][$skeys[$z]][0]."</label></div>";
 					}
 				}
 			echo "</div>";
 			echo "<style>.submenu {margin-left: 2em;}</style>";
 		}
+	}
+	public function legion_setting4_html() {
+		echo '<input type="checkbox" id="legion_save_menu" name="legion_save_menu" value="1"'.(isset($this->options['legion_save_menu']) ? " checked=\"checked\"" : '').' />';
 	}
 }

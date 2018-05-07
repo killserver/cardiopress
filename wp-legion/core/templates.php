@@ -18,6 +18,15 @@ class templates {
 		return $contents;
 	}
 
+	public static function instance() {
+		return new templates();
+	}
+
+	public static function clean() {
+		self::$blocks = array();
+		return true;
+	}
+
 	private static function config($arr) {
 		if($arr[1]=="default_http_host") {
 			return home_url('/');
@@ -100,7 +109,7 @@ class templates {
 	private static function replaceForeach($k, $v, $tmp, $start, $nameData) {
 		if(is_array($v) || is_object($v)) {
 			foreach($v as $k => $v) {
-				$tmp = self::replaceForeach($k, $v, $tmp, $nameData.".".$k);
+				$tmp = self::replaceForeach($k, $v, $tmp, $start, $nameData.".".$k);
 			}
 		} else {
 			$tmp = str_replace('{'.$nameData.'.$id}', $start, $tmp);
@@ -413,7 +422,9 @@ class templates {
 		$ret = "";
 		$step = 1;
 		for($i=$arr[1];$i<=$arr[2];$i=$i+$step) {
-			$ret .= $tmp;
+			$tpl = $tmp;
+			$tpl = str_replace('{$id}', $i, $tpl);
+			$ret .= $tpl;
 		}
 		return $ret;
 	}
@@ -456,9 +467,18 @@ class templates {
 		return $ret;
 	}
 
+	private static function countArray($arr) {
+		if(!isset(self::$blocks[$arr[1]])) {
+			return "0";
+		} else if(isset(self::$blocks[$arr[1]]) && is_array(self::$blocks[$arr[1]])) {
+			return sizeof(self::$blocks[$arr[1]]);
+		}
+	}
+
 	private static function compile($tpl) {
 		$tpl = preg_replace_callback("#\{S_(.+?)\}#i", "self::system", $tpl);
 		$tpl = preg_replace_callback("#\{C_(.+?)\}#i", "self::config", $tpl);
+		$tpl = preg_replace_callback("#\{count\[(.+?)\]\}#i", "self::countArray", $tpl);
 		$tpl = preg_replace_callback("#\[FIELD=\[(.+?)\]\[(.+?)\]\](.+?)\[/FIELD\]#is", "self::fields", $tpl);
 		$tpl = preg_replace_callback("#\[for ([0-9]+) to ([0-9]+)\](.+?)\[/for\]#is", "self::fors", $tpl);
 		$tpl = preg_replace_callback("#\{field=[\"'](.+?)[\"'](|,([0-9]))\}#i", "self::getField", $tpl);
@@ -564,7 +584,7 @@ class templates {
 				$params[] = $arr[2][$i];
 			}
 		}
-		return get_permalink($params);
+		return call_user_func_array("get_permalink", $params);
 	}
 
 	private static function escHtml($arr) {
