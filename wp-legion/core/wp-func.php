@@ -23,6 +23,9 @@ add_filter('themes_api_result', array($updater, 'modify_transient_theme'), 10, 3
 // Обновления
 add_filter('admin_footer_text', 'custom_admin_footer');
 
+add_action('admin_menu', 'change_admin_menus', 9999);
+add_action('login_head', 'custom_loginlogo', 9999999999999);
+
 $settings = get_option("legion");
 if(isset($settings['legion_category'])) {
 	add_filter('category_link', 'true_remove_category_from_category', 1, 1);
@@ -31,6 +34,16 @@ if(isset($settings['legion_category'])) {
 function change_admin_menus() {
     global $submenu, $menu, $pagenow;
     if(isset($_GET['dev'])) {
+    	foreach($menu as $k => &$v) {
+    		$v[2] = (strpos($v[2], ".php")===false ? "admin.php?page=":"").$v[2].(strpos($v[2], "?")===false && strpos($v[2], ".php")!==false ? "?": "&")."dev";
+    	}
+    	foreach($submenu as $k => &$v) {
+    		$keys = array_keys($v);
+    		for($i=0;$i<sizeof($keys);$i++) {
+    			$link = $v[$keys[$i]][2];
+    			$v[$keys[$i]][2] = (strpos($link, ".php")===false ? "admin.php?page=":"").$link.(strpos($link, "?")===false && strpos($link, ".php")!==false ? "?": "&")."dev";
+    		}
+    	}
     	return false;
     }
     $settings = get_option("legion");
@@ -58,15 +71,6 @@ function change_admin_menus() {
 		}
 	}
 }
-add_action('admin_menu', 'change_admin_menus', 9999);
-
-function change_post_object_label() {
-    global $wp_post_types;
-    foreach($wp_post_types as $page => $data) {
-		$wp_post_types[$page]->label = "test";
-	}
-}
-add_action( 'admin_init', 'change_post_object_label' );
 
 function remove_wp_logo($wp_admin_bar) {
 	$wp_admin_bar->remove_node('wp-logo');
@@ -105,7 +109,6 @@ echo '<span id="footer-thankyou">Спасибо вам за творчество
 function custom_loginlogo() {
 	echo '<style>.login h1 a { display: none; } #login { padding: 0px; } body { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; height: 100vh; }</style>';
 }
-add_action('login_head', 'custom_loginlogo', 9999999999999);
 
 function read_wp_request($wp) {
 	global $pageNow, $route, $call;
