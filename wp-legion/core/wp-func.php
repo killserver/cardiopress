@@ -23,8 +23,17 @@ add_filter('themes_api_result', array($updater, 'modify_transient_theme'), 10, 3
 // Обновления
 add_filter('admin_footer_text', 'custom_admin_footer');
 
-add_action('admin_menu', 'change_admin_menus', 9999);
+add_action('_admin_menu', 'change_admin_menus', 9999999999999);
+add_action('admin_menu', 'change_admin_menus', 9999999999999);
 add_action('login_head', 'custom_loginlogo', 9999999999999);
+
+if($wordpress_version < "4.7.3") {
+	add_filter( 'wp_check_filetype_and_ext', 'legion_disable_real_mime_check', 10, 4 );
+}
+add_filter( 'upload_mimes', 'legion_allow_svg_uploads' );
+add_filter( 'wp_prepare_attachment_for_js', 'legion_set_dimensions', 10, 3 );
+add_action( 'admin_enqueue_scripts', 'legion_administration_styles' );
+add_action( 'wp_head', 'legion_public_styles' );
 
 $settings = get_option("legion");
 if(isset($settings['legion_category'])) {
@@ -35,15 +44,31 @@ function change_admin_menus() {
     global $submenu, $menu, $pagenow;
     if(isset($_GET['dev'])) {
     	foreach($menu as $k => &$v) {
-    		$v[2] = (strpos($v[2], ".php")===false ? "admin.php?page=":"").$v[2].(strpos($v[2], "?")===false && strpos($v[2], ".php")!==false ? "?": "&")."dev";
+    		if(strpos($v[2], "separator")===false && strpos($v[2], "dev")===false && strpos($v[2], "&dev")===false) {
+	    		$v[2] = (strpos($v[2], ".php")===false ? "admin.php?page=":"").$v[2].(strpos($v[2], "&")===false ? "?" : "&")."dev";
+	    	}
     	}
-    	foreach($submenu as $k => &$v) {
+    	$GLOBALS['menu'] = $menu;
+    	$lost = $submenu;
+    	unset($submenu);
+    	foreach($lost as $k => &$v) {
+    		if(strpos($k, "dev")===false && strpos($k, "&dev")===false) {
+				$key = (strpos($k, ".php")===false ? "admin.php?page=":"").$k.(strpos($k, "?")===false && strpos($k, "&")===false ? "?" : "&")."dev";
+			} else {
+				$key = $k;
+			}
     		$keys = array_keys($v);
     		for($i=0;$i<sizeof($keys);$i++) {
     			$link = $v[$keys[$i]][2];
-    			$v[$keys[$i]][2] = (strpos($link, ".php")===false ? "admin.php?page=":"").$link.(strpos($link, "?")===false && strpos($link, ".php")!==false ? "?": "&")."dev";
+    			if(!isset($submenu[$key])) {
+	    			$submenu[$key] = $lost[$k];
+	    		}
+	    		if(strpos($submenu[$key][$keys[$i]][2], "?dev")===false && strpos($submenu[$key][$keys[$i]][2], "&dev")===false) {
+	    			$submenu[$key][$keys[$i]][2] = (strpos($link, ".php")===false ? "admin.php?page=":"").$link.(strpos($link, "?")===false ? "?" : "&")."dev";
+	    		}
     		}
     	}
+    	$GLOBALS['submenu'] = $submenu;
     	return false;
     }
     $settings = get_option("legion");
@@ -268,4 +293,77 @@ function remove_menus(){
 
 	// Кастом-филд
 	remove_menu_page('edit.php?post_type=acf-field-group');
+}
+
+
+// upload SVG
+
+
+function legion_allow_svg_uploads( $existing_mime_types = array() ) {
+	return array_merge( $existing_mime_types, array( 'svg' => 'image/svg+xml' ));
+}
+
+function legion_get_dimensions( $svg ) {
+	// Sometimes, for whatever reason, we still cannot get the attributes.
+	// If that happens, we will just go back to not knowing the dimensions,
+	// rather than breaking the site.
+	$fail = (object) array( 'width' => 0, 'height' => 0 );
+
+	// Welp, nothing we can do here...
+	if ( ! function_exists( 'simplexml_load_file' ) ) {
+		return $fail;
+	}
+
+	$svg = simplexml_load_file( $svg );
+	$attributes = $svg ? $svg->attributes() : false;
+
+	// Probably an invalid XML file?
+	if( ! $attributes ) {
+		return $fail;
+	}
+
+	$width = (string) $attributes->width;
+	$height = (string) $attributes->height;
+
+	return (object) array( 'width' => $width, 'height' => $height );
+}
+
+function legion_set_dimensions( $response, $attachment, $meta ) {
+	if( $response['mime'] == 'image/svg+xml' && empty( $response['sizes'] ) ) {
+		$svg_file_path = get_attached_file( $attachment->ID );
+		$dimensions = legion_get_dimensions( $svg_file_path );
+
+		$response[ 'sizes' ] = array(
+				'full' => array(
+					'url' => $response[ 'url' ],
+					'width' => $dimensions->width,
+					'height' => $dimensions->height,
+					'orientation' => $dimensions->width > $dimensions->height ? 'landscape' : 'portrait'
+			)
+		);
+	}
+
+	return $response;
+}
+
+function legion_administration_styles() {
+	// Media Listing Fix
+	wp_add_inline_style( 'wp-admin', ".media .media-icon img[src$='.svg'] { width: auto; height: auto; }" );
+	// Featured Image Fix
+	wp_add_inline_style( 'wp-admin', "#postimagediv .inside img[src$='.svg'] { width: 100%; height: auto; }" );
+}
+
+function legion_public_styles() {
+	// Featured Image Fix
+	echo "<style>.post-thumbnail img[src$='.svg'] { width: 100%; height: auto; }</style>";
+}
+
+function legion_disable_real_mime_check( $data, $file, $filename, $mimes ) {
+	$wp_filetype = wp_check_filetype( $filename, $mimes );
+
+	$ext = $wp_filetype['ext'];
+	$type = $wp_filetype['type'];
+	$proper_filename = $data['proper_filename'];
+
+	return compact( 'ext', 'type', 'proper_filename' );
 }

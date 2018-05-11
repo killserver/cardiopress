@@ -26,6 +26,9 @@ add_action('wp_loaded', "loadedDone");
 add_action('wp', 'initial_builder');
 function initial_builder() {
 	global $tplSite, $cardinalCache;
+	if(is_admin()) {
+		return false;
+	}
 	$tplSite = "index";
 	$loaderPosts = false;
 	$legion = apply_filters("legion_initial_builder", false, $tplSite);
