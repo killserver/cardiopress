@@ -40,6 +40,16 @@ class templates {
 		}
 	}
 
+	private static function readBool($data) {
+		if($data==="true") {
+			return true;
+		} else if($data==="false") {
+			return false;
+		} else {
+			return $data;
+		}
+	}
+
 	private static function menu($arr) {
 		$params = array();
 		if(isset($arr[3]) && strpos($arr[3], ";")!==false) {
@@ -47,13 +57,20 @@ class templates {
 			for($i=0;$i<sizeof($r);$i++) {
 				$exp = explode("=-=", $r[$i]);
 				if(isset($exp[1])) {
-					$params[$exp[0]] = $exp[1];
+					$params[$exp[0]] = self::readBool($exp[1]);
 				} else {
-					$params[] = $exp[0];
+					$params[] = self::readBool($exp[0]);
 				}
 			}
+		} else if(isset($arr[3]) && strpos($arr[3], "=-=")!==false) {
+			$exp = explode("=-=", $arr[3]);
+			if(isset($exp[1])) {
+				$params[$exp[0]] = self::readBool($exp[1]);
+			} else {
+				$params[] = self::readBool($exp[0]);
+			}
 		} else if(isset($arr[3])) {
-			$params['class'] = $arr[3];
+			$params['class'] = self::readBool($arr[3]);
 		} else {
 			$params['class'] = "";
 		}
@@ -64,9 +81,9 @@ class templates {
 			unset($params['walker']);
 		}
 		if($walker===false) {
-			$default = array('menu' => $arr[1], 'menu_class' => $params['class'], 'echo' => false);
+			$default = array('menu' => $arr[1], 'menu_class' => (isset($params['class']) ? $params['class'] : ""), 'echo' => false);
 		} else {
-			$default = array('menu' => $arr[1], 'menu_class' => $params['class'], 'echo' => false, "walker" => $walker);
+			$default = array('menu' => $arr[1], 'menu_class' => (isset($params['class']) ? $params['class'] : ""), 'echo' => false, "walker" => $walker);
 		}
 		$arr = array_merge($default, $params);
 		return wp_nav_menu($arr);
@@ -475,6 +492,17 @@ class templates {
 		}
 	}
 
+	private static function getLang($arr) {
+		if(class_exists("Langer", false)) {
+			return Langer::getLang($arr[2]);
+		}
+		return $arr[2];
+	}
+
+	private static function blog($arr) {
+		return get_bloginfo($arr[1]);
+	}
+
 	private static function compile($tpl) {
 		$tpl = preg_replace_callback("#\{S_(.+?)\}#i", "self::system", $tpl);
 		$tpl = preg_replace_callback("#\{C_(.+?)\}#i", "self::config", $tpl);
@@ -495,6 +523,8 @@ class templates {
 		$tpl = preg_replace_callback("#\{R_\[(.+?)\](|\[(.+?)\])\}#", "self::router", $tpl);
 		$tpl = preg_replace_callback("#\{CAT_\[(.+?)\](|\[(.+?)\])\}#", "self::getCat", $tpl);
 		$tpl = preg_replace_callback("#\{RP\[(.+?)\]\}#", "self::getParam", $tpl);
+		$tpl = preg_replace_callback("#\{L_([\"|']|)(.+?)(\\1)\}#i", "self::getLang", $tpl);
+		$tpl = preg_replace_callback("#\{B_(.+?)\}#i", "self::blog", $tpl);
 		$blocks = self::$blocks;
 		$tpl = self::replacer($tpl, $blocks);
 		while(preg_match('~\[if (.+?)\]([^[]*)\[/if \\1\]~iU', $tpl)) {
@@ -659,7 +689,10 @@ class templates {
 		} else {
 			$tpl = file_get_contents(PATH_SKINS."tmp".DS."main".self::$typeFile);
 		}
-		if($tmp==="" || $tmp==="index") {
+		if($tmp==="" || $tmp==="index" || $tmp==="front_page") {
+			if(file_exists(PATH_SKINS."tmp".DS."front_page".self::$typeFile)) {
+				$tmp = file_get_contents(PATH_SKINS."tmp".DS."front_page".self::$typeFile);
+			} else 
 			if(file_exists(PATH_SKINS."tmp".DS."index".self::$typeFile)) {
 				$tmp = file_get_contents(PATH_SKINS."tmp".DS."index".self::$typeFile);
 			}
@@ -672,7 +705,7 @@ class templates {
 		}
 		$tpl = str_replace("{content}", $tmp, $tpl);
 		if(!file_exists(PATH_SKINS."cache".DS."supportMenu.lock")) {
-			preg_match_all("#\{MENU_\[(.+?)\](\[(.+?)\])\}#i", $tpl, $list);
+			preg_match_all("#\{MENU_\[(.+?)\](|\[(.+?)\])\}#i", $tpl, $list);
 			$php = "";
 			for($i=0;$i<sizeof($list[1]);$i++) {
 				$php .= "'menu".$i."' => __('".$list[1][$i]."'),\n";

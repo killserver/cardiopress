@@ -20,6 +20,16 @@ function array_map_recursive($f, $xs) {
 function htmlspecialchars_cardinal($data) {
 	if(is_numeric($data) || is_bool($data) || is_resource($data) || is_null($data)) {
 		return $data;
+	} else if(is_array($data)) {
+		foreach($data as $k => $v) {
+			$data[$k] = htmlspecialchars_cardinal($v);
+		}
+		return $data;
+	} else if(is_object($data)) {
+		foreach($data as $k => $v) {
+			$data->{$k} = htmlspecialchars_cardinal($v);
+		}
+		return $data;
 	} else {
 		return htmlspecialchars($data);
 	}
@@ -41,7 +51,7 @@ function vdump() {
 	echo "<pre class=\"debug_backtrace\" style=\"margin-left:".(is_admin() ? "160" : "0")."px; margin-right:0px; padding:10px; color:black; text-align:left; font-size: 12px;".(is_admin() ? "padding-bottom:60px;" : "background-color:ghostwhite; border:solid 1px black;")."\">";
 	echo "<small style='font-size:12px'>".($d[0]['file']." [".$d[0]['line']."]")."</small><br><br>\n\n";
 	$fn = func_get_args();
-	$fn = array_map_recursive("htmlspecialchars_cardinal", $fn);
+	$fn = array_map("htmlspecialchars_cardinal", $fn);
 	for($i=0;$i<func_num_args();$i++) {
 		if(!function_exists("onlyEcho") || onlyEcho("")===false) {
 			call_user_func_array("var_dump", array($fn[$i]))."\n\n\n";

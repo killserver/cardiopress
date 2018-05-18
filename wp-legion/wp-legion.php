@@ -5,7 +5,7 @@
  * Plugin URI:  https://github.com/killserver/cardinal/tree/trunk/
  * Author URI:  https://github.com/killserver/
  * Author:      killserver
- * Version:     0.6.3
+ * Version:     0.6.4
 */
 
 // If this file is called directly, abort.
@@ -13,7 +13,7 @@ if(!defined('WPINC')) {
 	die;
 }
 
-define('LEGION_VERSION', '0.6.3');
+define('LEGION_VERSION', '0.6.4');
 
 define("IS_CORE", true);
 if(file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR."paths.php")) {
@@ -52,6 +52,12 @@ if(!class_exists('CardinalUpdater')) {
 $updater = new CardinalUpdater(__FILE__, "http://killer.pp.ua/wp/");
 
 require_once(PATH_CORE."core.php");
+
+if(file_exists(PATH_SKINS."supportLang.php")) {
+	require_once(PATH_CORE."Langer.php");
+	require_once(PATH_SKINS."supportLang.php");
+	Langer::init();
+}
 
 add_action('init', 'initial_cardinal_engine', 20);
 function initial_cardinal_engine() {
@@ -107,8 +113,11 @@ function getDatas($data) {
 function getById($id, $type = "post") {
 	global $post, $wp_the_query;
 	$my_posts = new WP_Query();
-	$my_posts = $my_posts->query('post_type='.$type.'&post_id='.$id);
-	$wp_the_query->queried_object = $post = $my_posts = current($my_posts);
+	$my_posts = $my_posts->query('post_type='.$type.'&p='.$id);
+	$post = $my_posts = current($my_posts);
+	if(!empty($wp_the_query)) {
+		$wp_the_query->queried_object = $post;
+	}
 	return (array) $my_posts;
 }
 
@@ -116,7 +125,10 @@ function getByName($id, $type = "post") {
 	global $post, $wp_the_query;
 	$my_posts = new WP_Query();
 	$my_posts = $my_posts->query('post_type='.$type.'&name='.$id);
-	$wp_the_query->queried_object = $post = $my_posts = current($my_posts);
+	$post = $my_posts = current($my_posts);
+	if(!empty($wp_the_query)) {
+		$wp_the_query->queried_object = $post;
+	}
 	return (array) $my_posts;
 }
 

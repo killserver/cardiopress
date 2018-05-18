@@ -27,7 +27,7 @@ add_action('_admin_menu', 'change_admin_menus', 9999999999999);
 add_action('admin_menu', 'change_admin_menus', 9999999999999);
 add_action('login_head', 'custom_loginlogo', 9999999999999);
 
-if($wordpress_version < "4.7.3") {
+if(isset($wordpress_version) && $wordpress_version < "4.7.3") {
 	add_filter( 'wp_check_filetype_and_ext', 'legion_disable_real_mime_check', 10, 4 );
 }
 add_filter( 'upload_mimes', 'legion_allow_svg_uploads' );
@@ -38,6 +38,11 @@ add_action( 'wp_head', 'legion_public_styles' );
 $settings = get_option("legion");
 if(isset($settings['legion_category'])) {
 	add_filter('category_link', 'true_remove_category_from_category', 1, 1);
+}
+
+function get_query_vars() {
+	global $wp_query;
+	return $wp_query->query_vars;
 }
 
 function change_admin_menus() {
@@ -121,10 +126,9 @@ function wpse_custom_generator_meta_tag() {
 	}
 	echo '<meta name="generator" content="Cardinal Engine '.$prs.'" />'."\n";
 }
-
-if(file_exists(PATH_CORE."menuSupport.php")) {
+if(file_exists(PATH_SKINS."menuSupport.php")) {
 	add_theme_support('menus');
-	require_once(PATH_CORE."menuSupport.php");
+	require_once(PATH_SKINS."menuSupport.php");
 }
 
 function custom_admin_footer() {
