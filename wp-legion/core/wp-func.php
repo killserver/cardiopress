@@ -132,7 +132,7 @@ if(file_exists(PATH_SKINS."menuSupport.php")) {
 }
 
 function custom_admin_footer() {
-echo '<span id="footer-thankyou">Спасибо вам за творчество с <a href="https://ru.wordpress.org/">WordPress</a> и ядром <a href="https://github.com/killserver/cardinal/tree/trunk/">Cardinal Engine</a>.</span>';
+echo '<span id="footer-thankyou">Спасибо вам за творчество с <a href="https://ru.wordpress.org/">WordPress</a> и ядром <a href="https://github.com/killserver/cardinal/tree/trunk/">Cardinal Engine</a>.</span><style>a[href*=\'hidden\'] + .wp-submenu li.wp-first-item { display: none; } img[src*=\'.svg\'] { background: #23282d; padding: 1rem; }</style>';
 }
 
 function custom_loginlogo() {

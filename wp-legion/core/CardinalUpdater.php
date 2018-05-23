@@ -41,11 +41,13 @@ class CardinalUpdater {
 	}
 
 	public function set_plugin_properties() {
-		$this->get_repository_all();
-		$this->loadAliases();
-		$this->plugin	= get_plugin_data($this->file);
-		$this->basename = plugin_basename($this->file);
-		$this->active	= is_plugin_active($this->basename);
+		if(!wp_doing_ajax()) {
+			$this->get_repository_all();
+			$this->loadAliases();
+			$this->plugin	= get_plugin_data($this->file);
+			$this->basename = plugin_basename($this->file);
+			$this->active	= is_plugin_active($this->basename);
+		}
 	}
 
 	private function maping($file, $version) {

@@ -22,7 +22,16 @@ class Langer {
 		self::$langSupportMain = $lang;
 	}
 
+	public static function getTranslate($content) {
+		global $q_config;
+		return qtranxf_use($q_config['language'], $content, true, false);
+	}
+
 	public static function init() {
+		global $q_config;
+		if(isset($q_config) && is_array($q_config)) {
+			return;
+		}
 		add_filter('init', 'Langer::parseLang');
 		add_filter('wp', 'Langer::setQueryVar');
 		add_action('query_vars', 'Langer::query_vars');
