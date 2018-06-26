@@ -156,7 +156,6 @@ class templates {
 			}
 			foreach($arr as $k => $v) {
 				if(empty($v)) {
-					$v = "";
 					self::$blocks[$name][$id]["IS_".$k] = "false";
 				} else {
 					self::$blocks[$name][$id]["IS_".$k] = "true";
@@ -166,7 +165,6 @@ class templates {
 		} else if(is_array($arr) || is_object($arr)) {
 			foreach($arr as $k => $v) {
 				if(empty($v)) {
-					$v = "";
 					self::$blocks["IS_".$k] = "false";
 				} else {
 					self::$blocks["IS_".$k] = "true";
@@ -360,7 +358,7 @@ class templates {
 			}
 		} elseif($type == "empty") {
 			$e = str_replace("\"", "", $e);
-			if((empty($e) || $else) && $good) {
+			if(($e==="" || $else) && $good) {
 				unset($e);
 				unset($type);
 				return $data;
@@ -371,7 +369,7 @@ class templates {
 			}
 		} elseif($type == "not_empty") {
 			$e = str_replace("\"", "", $e);
-			if((!empty($e) || isset(self::$blocks[$e]) || $else) && $good) {
+			if(($e!=="" || isset(self::$blocks[$e]) || $else) && $good) {
 				unset($e);
 				unset($type);
 				return $data;
@@ -527,8 +525,8 @@ class templates {
 		$tpl = preg_replace_callback("#\{B_(.+?)\}#i", "self::blog", $tpl);
 		$blocks = self::$blocks;
 		$tpl = self::replacer($tpl, $blocks);
-		while(preg_match('~\[if (.+?)\]([^[]*)\[/if \\1\]~iU', $tpl)) {
-			$tpl = preg_replace_callback('~\[if (.+?)\]([^[]*)\[/if \\1\]~iU', ("templates::is"), $tpl);
+		while(preg_match('~\[if (.+?)\](.*?)\[/if \\1\]~is', $tpl)) {
+			$tpl = preg_replace_callback('~\[if (.+?)\](.*?)\[/if \\1\]~is', ("templates::is"), $tpl, 1);
 		}
 		return $tpl;
 	}
